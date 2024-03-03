@@ -4,6 +4,8 @@ from models import db1, Producto, Albaran, albaran_producto, Factura, factura_pr
 from form import FacturaForm, AlbaranForm
 from flask import flash
 from datetime import datetime
+from sqlalchemy import update
+
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"
@@ -39,25 +41,33 @@ def factura():
     if request.method == "POST":
         if form.validate_on_submit():
             factura = Factura(fecha=datetime.utcnow())
+            db1.session.add(factura)  
+            db1.session.commit()  
+
             for i in range(1, 6):
                 nombre_field = getattr(form, f"nombre{i}")
                 cantidad_field = getattr(form, f"cantidad{i}")
                 nombre = nombre_field.data
                 cantidad = cantidad_field.data
                 producto = Producto.query.filter_by(nombre=nombre).first()
-                if cantidad is not None and cantidad > 0:
-                    if producto.cantidad >= cantidad:
-                        factura.productos.append(producto) 
-                        producto.cantidad -= cantidad  
-                    else:
-                        print(f"No hay suficiente cantidad de {producto.nombre} en stock.")
-                        return redirect(request.url) #en este caso, el request.url es el factura.html
-            db1.session.add(factura)
-            db1.session.commit()
+                if producto:
+                    if cantidad is not None and cantidad > 0:
+                        if producto.cantidad >= cantidad:
+                            factura.productos.append(producto) 
+                            producto.cantidad -= cantidad
+                            db1.session.execute(update(factura_producto).where(factura_producto.c.producto_id == producto.id).values(cantidad = cantidad))
+                            db1.session.commit()
+                        else:
+                            print(f"No hay suficiente cantidad de {producto.nombre} en stock.")
+                else:
+                    print("NO encuentra el producto en el base de datos")
+            return redirect(request.url)
             print("Factura procesada correctamente")
+            return redirect(url_for("stock"))
         else:
             print("Error en el formulario.")
     return render_template("factura.html", productos=productos, form=form)
+
 
 
 
@@ -69,6 +79,8 @@ def albaran():
         print("HA pasado el validator de form")
         albaran = Albaran()
         albaran.fecha = datetime.utcnow()
+        db1.session.add(albaran) 
+        db1.session.commit()
         for i in range(1, 6):
             nombre_field = getattr(form, f"nombre{i}")
             cantidad_field = getattr(form, f"cantidad{i}")
@@ -78,16 +90,22 @@ def albaran():
                 producto_existe = Producto.query.filter_by(nombre=nombre).first()
                 if producto_existe:
                     print(f"{nombre} ya existe, añadimos la cantidad sin crear un nuevo producto")
-                    producto_existe.cantidad += cantidad  # 更新现有产品的数量
+                    producto_existe.cantidad += cantidad 
                     albaran.productos.append(producto_existe)
+                    db1.session.commit()
+                    db1.session.execute(albaran_producto.insert().values(albaran_id=albaran.id, producto_id=producto_existe.id, cantidad=cantidad))
+                    db1.commit()
                 else:
                     nuevo_producto = Producto(nombre=nombre, cantidad=cantidad)
                     albaran.productos.append(nuevo_producto)
-        db1.session.add(albaran)  # 将新创建的 albaran 对象添加到会话中
-        db1.session.commit()  # 提交会话
+                    db1.session.add(nuevo_producto)
+                    db1.session.commit()  
+                    db1.session.execute(update(albaran_producto).where(albaran_producto.c.producto_id == nuevo_producto.id).values(cantidad = cantidad))
+                    db1.session.commit() 
         print("Actualizado")
         return redirect(url_for("stock"))
     return render_template("albaran.html", form=form)
+
 
 
 
