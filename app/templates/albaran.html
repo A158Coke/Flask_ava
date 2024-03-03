@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Albaran</title>
+</head>
+
+<body>
+  <h1>Albaran</h1>
+  <form action="{{ url_for('albaran') }}" method="post" style="margin: 20px;">
+    <label for="">Albaran</label>
+    {{ form.hidden_tag() }}
+    {% for i in range(1, 6) %}
+    <div id="product{{ i }}" class="productGroup">
+      <label for="nombre{{ i }}">Nombre:</label>
+      {{ form['nombre' + i|string](id='nombre' + i|string) }}
+      <label for="cantidad{{ i }}">Cantidad:</label>
+      {{ form['cantidad' + i|string](id='cantidad' + i|string) }}
+      {% for error in form['nombre' + i|string].errors %}
+      <span class=" error" style="color: red; font-size: 0.8em;">{{ error }}</span>
+      {% endfor %}
+      {% for error in form['cantidad' + i|string].errors %}
+      <span class="error" style="color: red; font-size: 0.8em;">{{ error }}</span>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <div style="margin-top: 10px;">
+      <input type="submit" value="Agregar Producto"
+        style="padding: 8px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;" />
+    </div>
+  </form>
+</body>
+
+</html>
