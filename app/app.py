@@ -43,7 +43,6 @@ def factura():
             factura = Factura(fecha=datetime.utcnow())
             db1.session.add(factura)  
             db1.session.commit()  
-
             for i in range(1, 6):
                 nombre_field = getattr(form, f"nombre{i}")
                 cantidad_field = getattr(form, f"cantidad{i}")
@@ -55,6 +54,7 @@ def factura():
                         if producto.cantidad >= cantidad:
                             factura.productos.append(producto) 
                             producto.cantidad -= cantidad
+                            db1.session.commit()
                             db1.session.execute(update(factura_producto).where(factura_producto.c.producto_id == producto.id).values(cantidad = cantidad))
                             db1.session.commit()
                         else:
