@@ -8,7 +8,7 @@ from sqlalchemy import update
 
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.sqlite"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["SECRET_KEY"] = "YuChenProject"
 db1.init_app(app)
@@ -93,8 +93,8 @@ def albaran():
                     producto_existe.cantidad += cantidad 
                     albaran.productos.append(producto_existe)
                     db1.session.commit()
-                    db1.session.execute(albaran_producto.insert().values(albaran_id=albaran.id, producto_id=producto_existe.id, cantidad=cantidad))
-                    db1.commit()
+                    db1.session.execute(update(albaran_producto).where(albaran_producto.c.producto_id == producto_existe.id).values(cantidad = cantidad))
+                    db1.session.commit()
                 else:
                     nuevo_producto = Producto(nombre=nombre, cantidad=cantidad)
                     albaran.productos.append(nuevo_producto)
